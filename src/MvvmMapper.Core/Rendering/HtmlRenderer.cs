@@ -1,12 +1,14 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using MvvmMapper.Core.Analysis;
 using MvvmMapper.Core.Graph;
 
 namespace MvvmMapper.Core.Rendering;
 
 public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
 {
+    public AnalysisReport? AnalysisReport { get; set; }
     private const string Template = """
         <!DOCTYPE html>
         <html lang="en">
@@ -58,6 +60,7 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
           <div class="stat"><div class="n">{{EDGE_COUNT}}</div><div class="l">Edges</div></div>
           <div class="stat"><div class="n">{{SHARED_VM_COUNT}}</div><div class="l">Shared VMs</div></div>
         </div>
+        {{ANALYSIS_SECTION}}
         <div class="controls">
           <input type="text" id="search" placeholder="Search..." oninput="filterRows()">
           <select id="confFilter" onchange="filterRows()">
@@ -138,7 +141,8 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
             .Replace("{{SHARED_VM_COUNT}}", sharedVmCount.ToString())
             .Replace("{{VIEW_ROWS}}", BuildViewRows(graph))
             .Replace("{{VM_ROWS}}", BuildVmRows(graph, sharedVms.Select(n => n.Id).ToHashSet()))
-            .Replace("{{ENDPOINT_ROWS}}", BuildEndpointRows(graph));
+            .Replace("{{ENDPOINT_ROWS}}", BuildEndpointRows(graph))
+            .Replace("{{ANALYSIS_SECTION}}", BuildAnalysisSection(AnalysisReport));
 
         var outputFile = Path.Combine(outputDirectory, "report.html");
         await File.WriteAllTextAsync(outputFile, html, Encoding.UTF8, cancellationToken);
@@ -223,6 +227,50 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
             sb.AppendLine("<tr><td colspan=\"4\" class=\"empty\">No ViewModels found.</td></tr>");
         }
 
+        return sb.ToString();
+    }
+
+    private static string BuildAnalysisSection(AnalysisReport? report)
+    {
+        if (report is null) return string.Empty;
+
+        bool hasOrphans = report.OrphanedViews.Count > 0
+            || report.OrphanedViewModels.Count > 0
+            || report.UnreachableEndpoints.Count > 0;
+        bool hasShared = report.SharedViewModels.Count > 0;
+
+        if (!hasOrphans && !hasShared) return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("<div style=\"padding:1rem 2rem;background:#fffbe6;border-bottom:1px solid #ffe58f\">");
+        sb.AppendLine("  <strong style=\"display:block;margin-bottom:.5rem;color:#614700\">Analysis</strong>");
+
+        if (hasOrphans)
+        {
+            if (report.OrphanedViews.Count > 0)
+            {
+                foreach (var v in report.OrphanedViews)
+                    sb.AppendLine($"  <span style=\"display:inline-block;margin:.2rem .3rem;padding:.2rem .6rem;background:#f8d7da;color:#721c24;border-radius:4px;font-size:.8rem\">Orphan View: {WebUtility.HtmlEncode(v.DisplayName)}</span>");
+            }
+            if (report.OrphanedViewModels.Count > 0)
+            {
+                foreach (var vm in report.OrphanedViewModels)
+                    sb.AppendLine($"  <span style=\"display:inline-block;margin:.2rem .3rem;padding:.2rem .6rem;background:#f8d7da;color:#721c24;border-radius:4px;font-size:.8rem\">Orphan VM: {WebUtility.HtmlEncode(vm.DisplayName)}</span>");
+            }
+            if (report.UnreachableEndpoints.Count > 0)
+            {
+                foreach (var ep in report.UnreachableEndpoints)
+                    sb.AppendLine($"  <span style=\"display:inline-block;margin:.2rem .3rem;padding:.2rem .6rem;background:#f8d7da;color:#721c24;border-radius:4px;font-size:.8rem\">Unreachable Endpoint: {WebUtility.HtmlEncode(ep.DisplayName)}</span>");
+            }
+        }
+
+        if (hasShared)
+        {
+            foreach (var vm in report.SharedViewModels)
+                sb.AppendLine($"  <span style=\"display:inline-block;margin:.2rem .3rem;padding:.2rem .6rem;background:#cce5ff;color:#004085;border-radius:4px;font-size:.8rem\">Shared VM: {WebUtility.HtmlEncode(vm.DisplayName)} (fan-in={vm.FanIn})</span>");
+        }
+
+        sb.AppendLine("</div>");
         return sb.ToString();
     }
 

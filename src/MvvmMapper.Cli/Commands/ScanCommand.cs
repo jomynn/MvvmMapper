@@ -8,6 +8,7 @@ using MvvmMapper.Core.Discovery;
 using MvvmMapper.Core.Graph;
 using MvvmMapper.Core.Parsing;
 using MvvmMapper.Core.Resolvers;
+using MvvmMapper.Core.Resolvers.Commands;
 using MvvmMapper.Core.Resolvers.ViewToViewModel;
 
 namespace MvvmMapper.Cli.Commands;
@@ -60,6 +61,7 @@ internal static class ScanCommand
                 new LocatorResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<LocatorResolver>()),
                 new DiContainerResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<DiContainerResolver>()),
                 new NamingConventionResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<NamingConventionResolver>()),
+                new CommandResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<CommandResolver>()),
             };
 
             var graphBuilder = new GraphBuilder(resolvers, loggerFactory.CreateLogger<GraphBuilder>());

@@ -4,11 +4,19 @@ namespace SimpleApp.ViewModels;
 
 public sealed class LoginViewModel
 {
+    private readonly Services.IAuthService _authService;
+
     public string Username { get; set; } = string.Empty;
     public ICommand LoginCommand { get; }
 
     public LoginViewModel(Services.IAuthService authService)
     {
-        LoginCommand = new RelayCommand(async () => await authService.LoginAsync(Username, string.Empty));
+        _authService = authService;
+        LoginCommand = new RelayCommand(ExecuteLogin);
+    }
+
+    private async void ExecuteLogin()
+    {
+        await _authService.LoginAsync(Username, string.Empty);
     }
 }

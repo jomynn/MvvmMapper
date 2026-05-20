@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace MvvmMapper.Core;
 
+[ExcludeFromCodeCoverage]
 public sealed class SystemFileSystem : IFileSystem
 {
     public bool FileExists(string path) => File.Exists(path);

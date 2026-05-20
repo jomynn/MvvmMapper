@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MvvmMapper.Core.Discovery;
 
+[ExcludeFromCodeCoverage]
 public sealed class SolutionLoader
 {
     private readonly ILogger<SolutionLoader> _logger;

@@ -30,6 +30,10 @@ public sealed class NamingConventionResolver : IResolver
         var nodes = new List<Node>();
         var edges = new List<Edge>();
 
+        var caliburnDetected = DetectCaliburnMicro(discovery.CsFiles);
+        if (caliburnDetected)
+            _logger.LogDebug("NamingConvention: Caliburn.Micro detected — naming matches will be promoted to Medium");
+
         // Build lookup: files that match a ViewModel suffix pattern
         var vmFiles = discovery.CsFiles
             .Where(f => _config.Patterns.ViewModelSuffix.Any(s =>
@@ -70,9 +74,37 @@ public sealed class NamingConventionResolver : IResolver
                     $"Naming convention match: {xamlName} ↔ {expectedVmName}"));
 
                 _logger.LogDebug("NamingConvention: {View} → {VM} [Low]", viewId, vmId);
+
+                if (caliburnDetected)
+                {
+                    edges.Add(new Edge(
+                        viewId, vmId, EdgeKind.BindsTo, Confidence.Medium,
+                        $"Caliburn.Micro project detected; naming convention promoted to Medium"));
+
+                    _logger.LogDebug("NamingConvention: {View} → {VM} [Medium] (Caliburn.Micro)", viewId, vmId);
+                }
             }
         }
 
         return Task.FromResult(new ResolverResult(nodes, edges));
+    }
+
+    private bool DetectCaliburnMicro(IReadOnlyList<string> csFiles)
+    {
+        foreach (var file in csFiles)
+        {
+            try
+            {
+                var content = _fs.ReadAllText(file);
+                if (content.Contains("Caliburn.Micro", StringComparison.Ordinal))
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "NamingConvention: Could not read {File} during Caliburn.Micro detection", file);
+            }
+        }
+
+        return false;
     }
 }

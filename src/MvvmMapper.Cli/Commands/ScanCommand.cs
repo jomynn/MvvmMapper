@@ -62,6 +62,7 @@ internal static class ScanCommand
                     new LocatorResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<LocatorResolver>()),
                     new DiContainerResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<DiContainerResolver>()),
                     new NamingConventionResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<NamingConventionResolver>()),
+                    new DataTemplateResolver(xamlParser, loggerFactory.CreateLogger<DataTemplateResolver>()),
                     new CommandResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<CommandResolver>()),
                     new HttpClientResolver(fs, loggerFactory.CreateLogger<HttpClientResolver>()),
                     new RefitResolver(fs, loggerFactory.CreateLogger<RefitResolver>()),

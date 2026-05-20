@@ -10,10 +10,13 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("MvvmMapper.Cli")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("MvvmMapper Contributors")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
+[assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright © 2024 MvvmMapper Contributors")]
+[assembly: System.Reflection.AssemblyDescriptionAttribute("Offline static analysis CLI for WPF MVVM C# solutions. Maps View → ViewModel → Se" +
+    "rvice → HTTP Endpoint.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+6eb1cb27f3aec61758fbd55c164d6ae3b7f298d0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+9ff2a55e63e263312a08f769acd50de7cb9632b6")]
 [assembly: System.Reflection.AssemblyProductAttribute("MvvmMapper.Cli")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MvvmMapper.Cli")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]

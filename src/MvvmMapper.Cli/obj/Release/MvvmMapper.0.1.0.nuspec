@@ -1,14 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
     <id>MvvmMapper</id>
     <version>0.1.0</version>
-    <authors>MvvmMapper.Cli</authors>
-    <description>Package Description</description>
+    <authors>MvvmMapper Contributors</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/mvvmmapper/mvvmmapper</projectUrl>
+    <description>Offline static analysis CLI for WPF MVVM C# solutions. Maps View → ViewModel → Service → HTTP Endpoint.</description>
+    <copyright>Copyright © 2024 MvvmMapper Contributors</copyright>
     <packageTypes>
       <packageType name="DotnetTool" />
     </packageTypes>
-    <repository type="git" commit="6eb1cb27f3aec61758fbd55c164d6ae3b7f298d0" />
+    <repository type="git" commit="9ff2a55e63e263312a08f769acd50de7cb9632b6" />
   </metadata>
   <files>
     <file src="/Volumes/External/Workspace/MvvmMapper/src/MvvmMapper.Cli/obj/DotnetToolSettings.xml" target="tools/net8.0/any/DotnetToolSettings.xml" />
@@ -306,5 +311,6 @@
     <file src="/Volumes/External/Workspace/MvvmMapper/src/MvvmMapper.Cli/bin/Release/net8.0/publish/runtimes/win/lib/net6.0/System.Security.Cryptography.ProtectedData.dll" target="tools/net8.0/any/runtimes/win/lib/net6.0/System.Security.Cryptography.ProtectedData.dll" />
     <file src="/Volumes/External/Workspace/MvvmMapper/src/MvvmMapper.Cli/bin/Release/net8.0/publish/runtimes/win/lib/net6.0/System.Windows.Extensions.dll" target="tools/net8.0/any/runtimes/win/lib/net6.0/System.Windows.Extensions.dll" />
     <file src="/Volumes/External/Workspace/MvvmMapper/src/MvvmMapper.Cli/bin/Release/net8.0/publish/runtimes/unix/lib/net6.0/System.Drawing.Common.dll" target="tools/net8.0/any/runtimes/unix/lib/net6.0/System.Drawing.Common.dll" />
+    <file src="/Volumes/External/Workspace/MvvmMapper/README.md" target="/README.md" />
   </files>
 </package>

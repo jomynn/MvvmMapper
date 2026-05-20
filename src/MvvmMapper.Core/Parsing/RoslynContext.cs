@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
@@ -7,6 +8,7 @@ namespace MvvmMapper.Core.Parsing;
 /// Wraps a Roslyn <see cref="Compilation"/> and lazily caches
 /// <see cref="SemanticModel"/> per syntax tree. Thread-safe.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class RoslynContext
 {
     private readonly Compilation _compilation;

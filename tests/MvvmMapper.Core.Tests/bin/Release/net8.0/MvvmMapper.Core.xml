@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MvvmMapper.Core</name>
+    </assembly>
+    <members>
+        <member name="T:MvvmMapper.Core.Graph.GraphBuilder">
+            <summary>Orchestrates all resolvers to produce the final MvvmGraph.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Graph.GraphBuilder.MergeEdges(System.Collections.Generic.List{MvvmMapper.Core.Graph.Edge})">
+            <summary>
+            Merges duplicate edges (same FromId + ToId + Kind).
+            Keeps the highest confidence; concatenates all reason strings.
+            </summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Graph.MvvmGraph">
+            <summary>Immutable in-memory graph produced by GraphBuilder.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.IFileSystem">
+            <summary>File system abstraction to keep Core testable without touching real disk.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.RoslynContext">
+            <summary>
+            Wraps a Roslyn <see cref="P:MvvmMapper.Core.Parsing.RoslynContext.Compilation"/> and lazily caches
+            <see cref="T:Microsoft.CodeAnalysis.SemanticModel"/> per syntax tree. Thread-safe.
+            </summary>
+        </member>
+        <member name="P:MvvmMapper.Core.Parsing.RoslynContext.Compilation">
+            <summary>The underlying Roslyn compilation.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.RoslynContext.GetSemanticModel(Microsoft.CodeAnalysis.SyntaxTree)">
+            <summary>
+            Returns a cached <see cref="T:Microsoft.CodeAnalysis.SemanticModel"/> for the given syntax tree,
+            creating it on first access. Safe to call from multiple threads.
+            </summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.RoslynContext.GetAllNamedTypes">
+            <summary>Returns all named types in the compilation (across all namespaces, including nested types).</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.ViewModelClassifier">
+            <summary>
+            Identifies which named types in a compilation are ViewModels, based on
+            configured name suffixes and base types.
+            </summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.ViewModelClassifier.IsViewModel(Microsoft.CodeAnalysis.INamedTypeSymbol)">
+            <summary>
+            Returns true when the given type should be treated as a ViewModel:
+            concrete (non-abstract) class whose name ends with a configured suffix
+            OR that inherits (directly or transitively) a configured base type.
+            </summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.ViewModelClassifier.IsView(System.String)">
+            <summary>Returns true when the type name ends with a configured view suffix.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.XamlCommandBinding">
+            <summary>A Command="{Binding XxxCommand}" binding found in XAML.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlCommandBinding.#ctor(System.String,System.String,System.Int32)">
+            <summary>A Command="{Binding XxxCommand}" binding found in XAML.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.XamlDataContextInfo">
+            <summary>
+            A DataContext declaration found in a XAML file.
+            <para><c>TypeName</c>: The resolved ViewModel class name (e.g. "LoginViewModel").</para>
+            <para><c>ClrNamespace</c>: The CLR namespace resolved from the xmlns alias (e.g. "MyApp.ViewModels").</para>
+            <para><c>Kind</c>: How the DataContext was declared.</para>
+            </summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlDataContextInfo.#ctor(System.String,System.String,MvvmMapper.Core.Parsing.DataContextKind,System.Int32)">
+            <summary>
+            A DataContext declaration found in a XAML file.
+            <para><c>TypeName</c>: The resolved ViewModel class name (e.g. "LoginViewModel").</para>
+            <para><c>ClrNamespace</c>: The CLR namespace resolved from the xmlns alias (e.g. "MyApp.ViewModels").</para>
+            <para><c>Kind</c>: How the DataContext was declared.</para>
+            </summary>
+        </member>
+        <member name="F:MvvmMapper.Core.Parsing.DataContextKind.ExplicitElement">
+            <summary>&lt;UserControl.DataContext&gt;&lt;vm:Foo /&gt;&lt;/UserControl.DataContext&gt;</summary>
+        </member>
+        <member name="F:MvvmMapper.Core.Parsing.DataContextKind.LocatorBinding">
+            <summary>DataContext="{Binding Foo, Source={StaticResource Locator}}"</summary>
+        </member>
+        <member name="F:MvvmMapper.Core.Parsing.DataContextKind.BindingPath">
+            <summary>DataContext="{Binding SomeChildVM}" — composition edge</summary>
+        </member>
+        <member name="F:MvvmMapper.Core.Parsing.DataContextKind.DesignTime">
+            <summary>d:DataContext — design-time only, ignored during analysis</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.XamlDataTemplateInfo">
+            <summary>A DataTemplate with a DataType attribute.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlDataTemplateInfo.#ctor(System.String,System.String,System.String,System.String,System.Int32)">
+            <summary>A DataTemplate with a DataType attribute.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.XamlDocument">
+            <summary>
+            Parsed representation of a XAML file.
+            <para><c>XClass</c>: The x:Class value, e.g. "MyApp.Views.LoginView".</para>
+            <para><c>RootElementType</c>: The root element type (UserControl, Window, Page, etc.).</para>
+            <para><c>XmlnsMap</c>: All xmlns prefix to CLR namespace mappings declared on the root element.</para>
+            <para><c>ChildControlTypeNames</c>: Child UserControl/custom-element type references found as child elements.</para>
+            </summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlDocument.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.Collections.Generic.IReadOnlyList{MvvmMapper.Core.Parsing.XamlDataContextInfo},System.Collections.Generic.IReadOnlyList{MvvmMapper.Core.Parsing.XamlCommandBinding},System.Collections.Generic.IReadOnlyList{MvvmMapper.Core.Parsing.XamlDataTemplateInfo},System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            Parsed representation of a XAML file.
+            <para><c>XClass</c>: The x:Class value, e.g. "MyApp.Views.LoginView".</para>
+            <para><c>RootElementType</c>: The root element type (UserControl, Window, Page, etc.).</para>
+            <para><c>XmlnsMap</c>: All xmlns prefix to CLR namespace mappings declared on the root element.</para>
+            <para><c>ChildControlTypeNames</c>: Child UserControl/custom-element type references found as child elements.</para>
+            </summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Parsing.XamlParser">
+            <summary>Parses a XAML file and extracts DataContext declarations, command bindings, data templates, and child control references.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlParser.TryParse(System.String)">
+            <summary>Tries to parse the given XAML file path. Returns null on error.</summary>
+        </member>
+        <member name="M:MvvmMapper.Core.Parsing.XamlParser.Parse(System.String,System.String)">
+            <summary>Parses XAML content string directly (useful for testing without file I/O).</summary>
+        </member>
+    </members>
+</doc>

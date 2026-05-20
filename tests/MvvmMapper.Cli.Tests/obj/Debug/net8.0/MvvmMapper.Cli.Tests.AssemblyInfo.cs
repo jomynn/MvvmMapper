@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MvvmMapper.Cli.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3fe389ae26bfd5d39c02a59b0379be670a6e1574")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+74fe3ca591015716a46243d853f19910ec910a84")]
 [assembly: System.Reflection.AssemblyProductAttribute("MvvmMapper.Cli.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MvvmMapper.Cli.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

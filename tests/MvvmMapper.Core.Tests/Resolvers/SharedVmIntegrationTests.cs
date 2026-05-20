@@ -4,6 +4,7 @@ using MvvmMapper.Core.Configuration;
 using MvvmMapper.Core.Discovery;
 using MvvmMapper.Core.Graph;
 using MvvmMapper.Core.Parsing;
+using MvvmMapper.Core.Resolvers.Endpoints;
 using MvvmMapper.Core.Resolvers.ViewToViewModel;
 using Xunit;
 
@@ -50,5 +51,37 @@ public sealed class SharedVmIntegrationTests
         fromIds.Should().Contain("view:SharedVmApp.Views.LoginView");
         fromIds.Should().Contain("view:SharedVmApp.Views.RegisterView");
         fromIds.Should().Contain("view:SharedVmApp.Views.ForgotPasswordView");
+    }
+
+    [Fact]
+    public async Task SharedVm_HttpClientResolver_EmitsTwoHighConfidenceEndpointEdges()
+    {
+        var fs = new SystemFileSystem();
+        var config = new MvvmMapConfig();
+        var discoverer = new FileDiscoverer(fs, NullLogger<FileDiscoverer>.Instance);
+        var discovery = discoverer.Discover(s_samplesPath, config);
+
+        var resolver = new HttpClientResolver(fs, NullLogger<HttpClientResolver>.Instance);
+        var result = await resolver.ResolveAsync(discovery);
+
+        var hitsEdges = result.Edges
+            .Where(e => e.Kind == EdgeKind.Hits)
+            .ToList();
+
+        hitsEdges.Should().HaveCountGreaterThanOrEqualTo(2,
+            "AuthService has PostAsync calls to /api/auth/login and /api/auth/register");
+
+        var endpointIds = hitsEdges.Select(e => e.ToId).ToHashSet();
+        endpointIds.Should().Contain("endpoint:POST:/api/auth/login");
+        endpointIds.Should().Contain("endpoint:POST:/api/auth/register");
+
+        hitsEdges.Should().AllSatisfy(e =>
+            e.Confidence.Should().Be(Confidence.High,
+                "routes are string literals in AuthService"));
+
+        var endpointNodes = result.Nodes.OfType<EndpointNode>().ToList();
+        endpointNodes.Should().HaveCountGreaterThanOrEqualTo(2);
+        endpointNodes.Select(n => n.Id).Should().Contain("endpoint:POST:/api/auth/login");
+        endpointNodes.Select(n => n.Id).Should().Contain("endpoint:POST:/api/auth/register");
     }
 }

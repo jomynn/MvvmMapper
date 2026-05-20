@@ -1,5 +1,6 @@
 using System.Net.Http;
-using System.Net.Http.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharedVmApp.Services;
 
@@ -9,18 +10,18 @@ public sealed class AuthService : IAuthService
 
     public AuthService(HttpClient http) => _http = http;
 
-    public async Task LoginAsync(string username, string password)
+    public async Task LoginAsync(string username, string password, CancellationToken cancellationToken = default)
     {
-        await _http.PostAsJsonAsync("/api/auth/login", new { username, password });
+        await _http.PostAsync("/api/auth/login", null!, cancellationToken);
     }
 
-    public async Task RegisterAsync(string username, string email, string password)
+    public async Task RegisterAsync(string username, string email, string password, CancellationToken cancellationToken = default)
     {
-        await _http.PostAsJsonAsync("/api/auth/register", new { username, email, password });
+        await _http.PostAsync("/api/auth/register", null!, cancellationToken);
     }
 
-    public async Task ForgotPasswordAsync(string email)
+    public async Task ForgotPasswordAsync(string email, CancellationToken cancellationToken = default)
     {
-        await _http.PostAsJsonAsync("/api/auth/forgot-password", new { email });
+        await _http.PostAsync("/api/auth/forgot-password", null!, cancellationToken);
     }
 }

@@ -67,6 +67,7 @@ internal static class ScanCommand
                     new HttpClientResolver(fs, loggerFactory.CreateLogger<HttpClientResolver>()),
                     new RefitResolver(fs, loggerFactory.CreateLogger<RefitResolver>()),
                     new RestSharpResolver(fs, loggerFactory.CreateLogger<RestSharpResolver>()),
+                    new EndpointClassResolver(fs, loggerFactory.CreateLogger<EndpointClassResolver>()),
                 };
 
                 var graphBuilder = new GraphBuilder(resolvers, loggerFactory.CreateLogger<GraphBuilder>());

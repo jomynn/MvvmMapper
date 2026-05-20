@@ -1,12 +1,11 @@
 using System.CommandLine;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using MvvmMapper.Core;
 using MvvmMapper.Core.Configuration;
 using MvvmMapper.Core.Discovery;
 using MvvmMapper.Core.Graph;
 using MvvmMapper.Core.Parsing;
+using MvvmMapper.Core.Rendering;
 using MvvmMapper.Core.Resolvers;
 using MvvmMapper.Core.Resolvers.Commands;
 using MvvmMapper.Core.Resolvers.Endpoints;
@@ -16,17 +15,11 @@ namespace MvvmMapper.Cli.Commands;
 
 internal static class ScanCommand
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     public static Command Build(ILoggerFactory loggerFactory)
     {
         var pathArg = new Argument<string>("path", "Path to .sln, .csproj, or folder to scan");
         var outputOption = new Option<string>("--output", () => "./mvvm-map-output", "Output directory");
-        var formatOption = new Option<string>("--format", () => "all", "Output format: html|md|json|all");
+        var formatOption = new Option<string>("--format", () => "all", "Output format: html|mermaid|json|all");
         var confidenceOption = new Option<string>("--confidence", () => "low", "Minimum confidence to include: high|medium|low");
         var configOption = new Option<string?>("--config", () => null, "Path to mvvm-map.json");
         var verboseOption = new Option<bool>("--verbose", "Enable verbose logging");
@@ -38,8 +31,6 @@ internal static class ScanCommand
 
         cmd.SetHandler(async (path, output, format, confidence, config, verbose) =>
         {
-            _ = output;
-            _ = format;
             _ = confidence;
             _ = verbose;
 
@@ -71,15 +62,44 @@ internal static class ScanCommand
             var graphBuilder = new GraphBuilder(resolvers, loggerFactory.CreateLogger<GraphBuilder>());
             var graph = await graphBuilder.BuildAsync(discovery);
 
-            var result = new
-            {
-                nodes = graph.Nodes.Values,
-                edges = graph.Edges
-            };
+            Directory.CreateDirectory(output);
 
-            Console.WriteLine(JsonSerializer.Serialize(result, s_jsonOptions));
+            var renderers = BuildRenderers(loggerFactory, format);
+
+            foreach (var renderer in renderers)
+            {
+                await renderer.RenderAsync(graph, output);
+            }
+
+            Console.WriteLine($"Scan complete. Output written to: {Path.GetFullPath(output)}");
+            Console.WriteLine($"  Nodes : {graph.Nodes.Count}");
+            Console.WriteLine($"  Edges : {graph.Edges.Count}");
+
+            if (renderers.Any(r => r.Format == "html"))
+                Console.WriteLine($"  Report: {Path.Combine(Path.GetFullPath(output), "report.html")}");
+            if (renderers.Any(r => r.Format == "json"))
+                Console.WriteLine($"  JSON  : {Path.Combine(Path.GetFullPath(output), "graph.json")}");
+            if (renderers.Any(r => r.Format == "mermaid"))
+                Console.WriteLine($"  MD    : {Path.Combine(Path.GetFullPath(output), "mermaid-by-view.md")}");
+
         }, pathArg, outputOption, formatOption, confidenceOption, configOption, verboseOption);
 
         return cmd;
+    }
+
+    private static IRenderer[] BuildRenderers(ILoggerFactory loggerFactory, string format)
+    {
+        var all = new IRenderer[]
+        {
+            new JsonRenderer(loggerFactory.CreateLogger<JsonRenderer>()),
+            new MermaidRenderer(loggerFactory.CreateLogger<MermaidRenderer>()),
+            new HtmlRenderer(loggerFactory.CreateLogger<HtmlRenderer>()),
+        };
+
+        if (format.Equals("all", StringComparison.OrdinalIgnoreCase))
+            return all;
+
+        var formats = format.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return all.Where(r => formats.Any(f => f.Equals(r.Format, StringComparison.OrdinalIgnoreCase))).ToArray();
     }
 }

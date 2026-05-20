@@ -1,7 +1,14 @@
+using System.Text.Json.Serialization;
+
 namespace MvvmMapper.Core.Graph;
 
 public enum NodeKind { View, ViewModel, Method, Service, Endpoint }
 
+[JsonDerivedType(typeof(ViewNode), "view")]
+[JsonDerivedType(typeof(ViewModelNode), "viewModel")]
+[JsonDerivedType(typeof(MethodNode), "method")]
+[JsonDerivedType(typeof(ServiceNode), "service")]
+[JsonDerivedType(typeof(EndpointNode), "endpoint")]
 public abstract record Node(
     string Id,
     string DisplayName,

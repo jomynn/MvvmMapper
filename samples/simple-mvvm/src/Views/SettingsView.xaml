@@ -1,0 +1,9 @@
+<UserControl x:Class="SimpleApp.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:SimpleApp.ViewModels">
+    <Grid>
+        <CheckBox IsChecked="{Binding DarkMode}" Content="Dark Mode" />
+        <Button Command="{Binding SaveCommand}" Content="Save" />
+    </Grid>
+</UserControl>

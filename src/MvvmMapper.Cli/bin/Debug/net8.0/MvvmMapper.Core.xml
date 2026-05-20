@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MvvmMapper.Core</name>
+    </assembly>
+    <members>
+        <member name="T:MvvmMapper.Core.Graph.GraphBuilder">
+            <summary>Orchestrates all resolvers to produce the final MvvmGraph.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.Graph.MvvmGraph">
+            <summary>Immutable in-memory graph produced by GraphBuilder.</summary>
+        </member>
+        <member name="T:MvvmMapper.Core.IFileSystem">
+            <summary>File system abstraction to keep Core testable without touching real disk.</summary>
+        </member>
+    </members>
+</doc>

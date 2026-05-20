@@ -20,7 +20,7 @@ public sealed class GraphBuilder
         CancellationToken cancellationToken = default)
     {
         var nodes = new Dictionary<string, Node>();
-        var edges = new List<Edge>();
+        var rawEdges = new List<Edge>();
 
         foreach (var resolver in _resolvers)
         {
@@ -30,7 +30,7 @@ public sealed class GraphBuilder
                 var result = await resolver.ResolveAsync(discovery, cancellationToken);
                 foreach (var node in result.Nodes)
                     nodes.TryAdd(node.Id, node);
-                edges.AddRange(result.Edges);
+                rawEdges.AddRange(result.Edges);
             }
             catch (Exception ex)
             {
@@ -38,6 +38,38 @@ public sealed class GraphBuilder
             }
         }
 
+        var edges = MergeEdges(rawEdges);
+
         return new MvvmGraph(nodes, edges);
+    }
+
+    /// <summary>
+    /// Merges duplicate edges (same FromId + ToId + Kind).
+    /// Keeps the highest confidence; concatenates all reason strings.
+    /// </summary>
+    private static List<Edge> MergeEdges(List<Edge> rawEdges)
+    {
+        var groups = rawEdges.GroupBy(e => (e.FromId, e.ToId, e.Kind));
+        var merged = new List<Edge>(rawEdges.Count);
+
+        foreach (var group in groups)
+        {
+            var entries = group.ToList();
+            if (entries.Count == 1)
+            {
+                merged.Add(entries[0]);
+                continue;
+            }
+
+            var best = entries.OrderBy(e => e.Confidence).First(); // Low=2, Medium=1, High=0
+            var allReasons = entries.Select(e => e.Reason).Distinct(StringComparer.Ordinal).ToList();
+            var combinedReason = allReasons.Count == 1
+                ? allReasons[0]
+                : string.Join("; also: ", allReasons);
+
+            merged.Add(best with { Reason = combinedReason });
+        }
+
+        return merged;
     }
 }

@@ -1,15 +1,24 @@
 using System.CommandLine;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using MvvmMapper.Core;
 using MvvmMapper.Core.Configuration;
 using MvvmMapper.Core.Discovery;
+using MvvmMapper.Core.Graph;
+using MvvmMapper.Core.Parsing;
+using MvvmMapper.Core.Resolvers;
+using MvvmMapper.Core.Resolvers.ViewToViewModel;
 
 namespace MvvmMapper.Cli.Commands;
 
 internal static class ScanCommand
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     public static Command Build(ILoggerFactory loggerFactory)
     {
@@ -25,7 +34,7 @@ internal static class ScanCommand
             pathArg, outputOption, formatOption, confidenceOption, configOption, verboseOption
         };
 
-        cmd.SetHandler((path, output, format, confidence, config, verbose) =>
+        cmd.SetHandler(async (path, output, format, confidence, config, verbose) =>
         {
             _ = output;
             _ = format;
@@ -42,11 +51,24 @@ internal static class ScanCommand
             var discoverer = new FileDiscoverer(fs, loggerFactory.CreateLogger<FileDiscoverer>());
             var discovery = discoverer.Discover(root, mvvmConfig);
 
+            var xamlParser = new XamlParser(fs, loggerFactory.CreateLogger<XamlParser>());
+
+            var resolvers = new IResolver[]
+            {
+                new ExplicitXamlResolver(xamlParser, loggerFactory.CreateLogger<ExplicitXamlResolver>()),
+                new CodeBehindResolver(fs, xamlParser, loggerFactory.CreateLogger<CodeBehindResolver>()),
+                new LocatorResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<LocatorResolver>()),
+                new DiContainerResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<DiContainerResolver>()),
+                new NamingConventionResolver(mvvmConfig, xamlParser, fs, loggerFactory.CreateLogger<NamingConventionResolver>()),
+            };
+
+            var graphBuilder = new GraphBuilder(resolvers, loggerFactory.CreateLogger<GraphBuilder>());
+            var graph = await graphBuilder.BuildAsync(discovery);
+
             var result = new
             {
-                RootDirectory = discovery.RootDirectory,
-                XamlFiles = discovery.XamlFiles,
-                CsFiles = discovery.CsFiles
+                nodes = graph.Nodes.Values,
+                edges = graph.Edges
             };
 
             Console.WriteLine(JsonSerializer.Serialize(result, s_jsonOptions));

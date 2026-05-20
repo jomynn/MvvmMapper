@@ -7,6 +7,12 @@
         <member name="T:MvvmMapper.Core.Graph.GraphBuilder">
             <summary>Orchestrates all resolvers to produce the final MvvmGraph.</summary>
         </member>
+        <member name="M:MvvmMapper.Core.Graph.GraphBuilder.MergeEdges(System.Collections.Generic.List{MvvmMapper.Core.Graph.Edge})">
+            <summary>
+            Merges duplicate edges (same FromId + ToId + Kind).
+            Keeps the highest confidence; concatenates all reason strings.
+            </summary>
+        </member>
         <member name="T:MvvmMapper.Core.Graph.MvvmGraph">
             <summary>Immutable in-memory graph produced by GraphBuilder.</summary>
         </member>

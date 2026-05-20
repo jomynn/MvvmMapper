@@ -11,6 +11,14 @@ internal sealed class FakeFileSystem : IFileSystem
         _files = new Dictionary<string, string>(files, StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>Constructs an empty fake file system (no files on disk).</summary>
+    public FakeFileSystem(IEnumerable<KeyValuePair<string, string>> files)
+    {
+        _files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in files)
+            _files[kvp.Key] = kvp.Value;
+    }
+
     public bool FileExists(string path) => _files.ContainsKey(path);
 
     public bool DirectoryExists(string path) =>

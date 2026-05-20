@@ -20,4 +20,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="System.IO.Abstractions" Version="21.0.29" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\src\MvvmMapper.Core.Templates\mermaid.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>mermaid.min.js</Link>
+    </Content>
+  </ItemGroup>
 </Project>

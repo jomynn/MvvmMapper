@@ -46,7 +46,16 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
         .shared{background:#cce5ff;color:#004085}
         code{font-family:monospace;font-size:.8rem;background:#f0f0f0;padding:.1rem .3rem;border-radius:3px}
         .empty{color:#999;font-style:italic;padding:2rem;text-align:center}
+        .diagram-section{margin-bottom:2rem;background:#fff;border-radius:8px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+        .diagram-section h3{font-size:1rem;color:#1e3a5f;margin-bottom:1rem;border-bottom:1px solid #eee;padding-bottom:.5rem}
+        .mermaid{overflow-x:auto}
         </style>
+        {{MERMAID_SCRIPT_TAG}}
+        <script>
+        window.addEventListener('DOMContentLoaded',function(){
+          if(typeof mermaid!=='undefined'){mermaid.initialize({startOnLoad:true,theme:'default'});}
+        });
+        </script>
         </head>
         <body>
         <div class="header">
@@ -73,6 +82,7 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
           <div class="tab active" onclick="showTab('view')">By View</div>
           <div class="tab" onclick="showTab('vm')">By ViewModel</div>
           <div class="tab" onclick="showTab('endpoint')">By Endpoint</div>
+          <div class="tab" onclick="showTab('diagram')">Diagrams</div>
         </div>
         <div id="panel-view" class="panel active">
           <table id="tbl-view">
@@ -92,9 +102,13 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
             <tbody>{{ENDPOINT_ROWS}}</tbody>
           </table>
         </div>
+        <div id="panel-diagram" class="panel">
+          {{DIAGRAM_SECTIONS}}
+        </div>
         <script>
+        const TAB_NAMES=['view','vm','endpoint','diagram'];
         function showTab(name){
-          document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',['view','vm','endpoint'][i]===name)});
+          document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',TAB_NAMES[i]===name)});
           document.querySelectorAll('.panel').forEach(p=>{p.classList.toggle('active',p.id==='panel-'+name)});
         }
         function filterRows(){
@@ -109,7 +123,6 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
           });
         }
         </script>
-        <!-- Open .md files in a Mermaid viewer for diagrams. -->
         </body>
         </html>
         """;
@@ -131,6 +144,8 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
             .ToList();
         var sharedVmCount = sharedVms.Count;
 
+        var mermaidScriptTag = CopyMermaidAndBuildScriptTag(outputDirectory);
+
         var html = Template
             .Replace("{{GENERATED_AT}}", WebUtility.HtmlEncode(DateTime.UtcNow.ToString("o")))
             .Replace("{{SOLUTION_PATH}}", WebUtility.HtmlEncode(outputDirectory))
@@ -141,12 +156,33 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
             .Replace("{{SHARED_VM_COUNT}}", sharedVmCount.ToString())
             .Replace("{{VIEW_ROWS}}", BuildViewRows(graph))
             .Replace("{{VM_ROWS}}", BuildVmRows(graph, sharedVms.Select(n => n.Id).ToHashSet()))
-            .Replace("{{ENDPOINT_ROWS}}", BuildEndpointRows(graph))
-            .Replace("{{ANALYSIS_SECTION}}", BuildAnalysisSection(AnalysisReport));
+            .Replace("{{ENDPOINT_ROWS}}", BuildEndpointRows(graph, AnalysisReport))
+            .Replace("{{ANALYSIS_SECTION}}", BuildAnalysisSection(AnalysisReport))
+            .Replace("{{MERMAID_SCRIPT_TAG}}", mermaidScriptTag)
+            .Replace("{{DIAGRAM_SECTIONS}}", BuildDiagramSections(graph));
 
         var outputFile = Path.Combine(outputDirectory, "report.html");
         await File.WriteAllTextAsync(outputFile, html, Encoding.UTF8, cancellationToken);
         logger.LogInformation("Wrote {File}", outputFile);
+    }
+
+    private string CopyMermaidAndBuildScriptTag(string outputDirectory)
+    {
+        var assemblyDir = Path.GetDirectoryName(typeof(HtmlRenderer).Assembly.Location)
+            ?? AppContext.BaseDirectory;
+        var sourcePath = Path.Combine(assemblyDir, "mermaid.min.js");
+
+        if (!File.Exists(sourcePath))
+        {
+            logger.LogWarning("mermaid.min.js not found at {Path} — Diagrams tab will not render Mermaid diagrams", sourcePath);
+            return "<!-- mermaid.min.js not available: diagrams will not render -->";
+        }
+
+        var destPath = Path.Combine(outputDirectory, "mermaid.min.js");
+        File.Copy(sourcePath, destPath, overwrite: true);
+        logger.LogInformation("Copied mermaid.min.js to {Dest}", destPath);
+
+        return """<script src="mermaid.min.js"></script>""";
     }
 
     private static string BuildViewRows(MvvmGraph graph)
@@ -274,7 +310,7 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
         return sb.ToString();
     }
 
-    private static string BuildEndpointRows(MvvmGraph graph)
+    private static string BuildEndpointRows(MvvmGraph graph, AnalysisReport? report)
     {
         var sb = new StringBuilder();
         var endpoints = graph.Nodes.Values
@@ -295,16 +331,28 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
                 ? string.Join(", ", hittingMethods.Select(m => $"<code>{WebUtility.HtmlEncode(m)}</code>"))
                 : "<em>none</em>";
 
-            // Find views that can reach this endpoint
-            var reachingViews = graph.Nodes.Values
-                .OfType<ViewNode>()
-                .Where(v => graph.ReachableEndpoints(v.Id).Any(ep => ep.Id == endpoint.Id))
-                .Select(v => v.DisplayName)
-                .OrderBy(name => name)
-                .ToList();
+            // Prefer AnalysisReport.EndpointImpacts when available; fall back to graph traversal
+            List<string> reachingViewNames;
+            var impact = report?.EndpointImpacts.FirstOrDefault(ei => ei.EndpointId == endpoint.Id);
+            if (impact is not null)
+            {
+                reachingViewNames = impact.ReachableFromViewIds
+                    .Select(id => graph.Nodes.TryGetValue(id, out var n) ? n.DisplayName : id)
+                    .OrderBy(name => name)
+                    .ToList();
+            }
+            else
+            {
+                reachingViewNames = graph.Nodes.Values
+                    .OfType<ViewNode>()
+                    .Where(v => graph.ReachableEndpoints(v.Id).Any(ep => ep.Id == endpoint.Id))
+                    .Select(v => v.DisplayName)
+                    .OrderBy(name => name)
+                    .ToList();
+            }
 
-            var viewsCell = reachingViews.Count > 0
-                ? string.Join(", ", reachingViews.Select(WebUtility.HtmlEncode))
+            var viewsCell = reachingViewNames.Count > 0
+                ? string.Join(", ", reachingViewNames.Select(WebUtility.HtmlEncode))
                 : "<em>none</em>";
 
             sb.AppendLine($"""
@@ -324,4 +372,73 @@ public sealed class HtmlRenderer(ILogger<HtmlRenderer> logger) : IRenderer
 
         return sb.ToString();
     }
+
+    private static string BuildDiagramSections(MvvmGraph graph)
+    {
+        var sb = new StringBuilder();
+        var views = graph.Nodes.Values.OfType<ViewNode>().OrderBy(v => v.DisplayName).ToList();
+
+        if (views.Count == 0)
+        {
+            sb.AppendLine("<p class=\"empty\">No Views found to diagram.</p>");
+            return sb.ToString();
+        }
+
+        foreach (var view in views)
+        {
+            sb.AppendLine($"<div class=\"diagram-section\">");
+            sb.AppendLine($"  <h3>{WebUtility.HtmlEncode(view.DisplayName)}</h3>");
+            sb.AppendLine($"  <div class=\"mermaid\">");
+            sb.AppendLine("flowchart LR");
+
+            var vId = MermaidSafeId(view.Id);
+            var vLabel = MermaidSafeLabel(view.DisplayName);
+            sb.AppendLine($"    {vId}[\"{vLabel}\"]");
+
+            var bindEdges = graph.EdgesFrom(view.Id)
+                .Where(e => e.Kind == EdgeKind.BindsTo)
+                .ToList();
+
+            foreach (var edge in bindEdges)
+            {
+                if (!graph.Nodes.TryGetValue(edge.ToId, out var vmNode)) continue;
+                var vmId = MermaidSafeId(vmNode.Id);
+                var vmLabel = MermaidSafeLabel(vmNode.DisplayName);
+                sb.AppendLine($"    {vmId}[\"{vmLabel}\"]");
+                sb.AppendLine($"    {vId} -->|\"{edge.Kind} {edge.Confidence}\"| {vmId}");
+
+                foreach (var endpoint in graph.ReachableEndpoints(view.Id))
+                {
+                    var epId = MermaidSafeId(endpoint.Id);
+                    var epLabel = MermaidSafeLabel($"{endpoint.Verb} {endpoint.Route}");
+                    sb.AppendLine($"    {epId}[\"{epLabel}\"]");
+                    sb.AppendLine($"    {vmId} -->|\"Hits\"| {epId}");
+                }
+            }
+
+            if (bindEdges.Count == 0)
+            {
+                sb.AppendLine($"    {vId}");
+            }
+
+            sb.AppendLine("  </div>");
+            sb.AppendLine("</div>");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string MermaidSafeId(string id)
+    {
+        var clean = new StringBuilder();
+        foreach (var c in id)
+        {
+            if (char.IsLetterOrDigit(c)) clean.Append(c);
+            else clean.Append('_');
+        }
+        return clean.ToString();
+    }
+
+    private static string MermaidSafeLabel(string label) =>
+        label.Replace('"', '\'').Replace('[', '(').Replace(']', ')');
 }

@@ -1,0 +1,62 @@
+# Build outputs
+bin/
+obj/
+ref/
+refint/
+*.dll
+*.exe
+*.pdb
+*.cache
+
+# Debug
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# NuGet
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+packages/
+.nuget/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Test results & coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.cobertura.xml
+
+# Publish output
+publish/
+PublishProfiles/
+
+# MSBuild
+*.binlog
+
+# Temp & OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log
